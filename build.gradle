@@ -1,0 +1,190 @@
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin:'application'
+mainClassName = "net.rtme.Classnamer"
+
+group = "net.rtme"
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    testCompile 'org.hamcrest:hamcrest-all:1.3'
+    testCompile 'junit:junit:4.11'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+    }
+    test {
+        resources {
+            srcDir 'src/test/java'
+        }
+    }
+}
+
+task getVersion ( dependsOn: 'classes') << {
+    def stdout = new ByteArrayOutputStream()
+    javaexec {
+        classpath = sourceSets.main.runtimeClasspath
+        main = 'net.rtme.Classnamer'
+        args = ['--version']
+        standardOutput = stdout
+    }
+    ext.gitTag = "git describe".execute().in.text.trim()
+    ext.version = stdout.toString().trim().split(" ")[0].replace(',','').trim()
+
+    if (!gradle.taskGraph.hasTask(uploadArchives)) {
+        ext.version = version + "-" + "git rev-parse --short HEAD".execute().in.text.trim()
+    }
+    project.version = version
+
+    logger.quiet("gitTag: " + gitTag)
+    logger.quiet("version: " + version)
+}
+
+jar.dependsOn getVersion
+jar {
+    baseName 'classnamerj'
+    doLast {
+        manifest {
+            attributes("Implementation-Title": "A Java implementation of classnamer", "Implementation-Version": project.version)
+        }
+    }
+}
+
+
+task myJavadocs(type: Javadoc, dependsOn: processResources) {
+    classpath = configurations.compile
+    source = sourceSets.main.allJava
+}
+
+task javadocJar (type: Jar, dependsOn: [myJavadocs]) {
+    classifier = 'javadoc'
+    from myJavadocs.destinationDir
+    manifest {
+        attributes("Implementation-Title": "A Java implementation of classnamer")
+    }
+}
+
+
+task buildJavadocJar (dependsOn: [getVersion, myJavadocs] ) << {
+    ext.version = getVersion.version
+    project.version = ext.version
+    tasks.javadocJar.execute()
+}
+
+
+task sourceJar (type : Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+    manifest {
+        attributes("Implementation-Title": "A Java implementation of classnamer")
+    }
+}
+
+task buildSourceJar (dependsOn: [getVersion] ) << {
+    ext.version = getVersion.version
+    project.version = ext.version
+    tasks.sourceJar.execute()
+}
+
+
+artifacts {
+    archives jar
+    archives javadocJar
+    archives sourceJar
+}
+
+task signJars (type : Sign, dependsOn: [jar, buildJavadocJar, buildSourceJar]) {
+    sign configurations.archives
+}
+
+install.dependsOn([jar, buildJavadocJar, buildSourceJar])
+install {
+    repositories {
+        mavenInstaller {
+            addFilter('classnamer') {artifact, file ->
+                artifact.name == 'classnamerj'
+            }
+        }
+    }
+}
+
+project.ext.bintrayUsername = project.hasProperty('bintrayUsername') ? bintrayUsername : ""
+project.ext.bintrayPassword = project.hasProperty('bintrayPassword') ? bintrayPassword : ""
+project.ext.url = 'https://crate.io'
+project.ext.scm = {
+    url 'https://github.com/seut/classnamerj'
+    connection 'scm:git:git://github.com/seut/classnamerj.git'
+    developerConnection 'scm:git:ssh:git@github.com:seut/classnamerj.git'
+}
+project.ext.licenses = {
+    license {
+        name 'The MIT License (MIT)'
+        url 'http://opensource.org/licenses/MIT'
+        distribution 'repo'
+    }
+}
+project.ext.developers = {
+    developer {
+        id 'seut'
+        name 'Sebastian Utz'
+        email 'su@rtme.net'
+    }
+}
+
+uploadArchives.dependsOn([signJars])
+uploadArchives {
+    repositories{
+        mavenDeployer {
+            beforeDeployment {
+                MavenDeployment deployment -> signing.signPom(deployment)
+                if (project.ext.bintrayUsername.length() == 0 || project.ext.bintrayPassword.length() == 0) {
+                    throw new StopExecutionException("uploadArchives cannot be called without bintray username and password")
+                }
+            }
+
+            MavenPom pomJdbc = addFilter('classnamerj') {artifact, file ->
+                artifact.name == 'classnamerj'
+            }
+            pomJdbc.project {
+                artifactId 'classnamerj'
+                name 'classnamerj'
+                description 'A Java implementation of classnamer'
+                url project.ext.url
+                scm project.ext.scm
+                licenses project.ext.licenses
+                developers project.ext.developers
+            }
+
+            repository(id: 'classnamerj', url: 'https://api.bintray.com/maven/smu/maven/classnamerj') {
+                authentication(userName: project.ext.bintrayUsername, password: project.ext.bintrayPassword)
+            }
+        }
+    }
+}
+
+test {
+    // show standard out and standard error of the test JVM(s) on the console
+    testLogging.showStandardStreams = true
+    outputs.upToDateWhen { false }
+}
+
+
+idea {
+    project {
+        languageLevel = 'JDK_1_7'
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.3'
+}
