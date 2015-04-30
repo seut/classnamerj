@@ -1,3 +1,8 @@
+.. image:: https://travis-ci.org/seut/classnamerj.svg?branch=master
+        :target: https://travis-ci.org/seut/classnamerj
+        :alt: Build status
+
+
 ====================================================
  Classnamerj - A Java implementation of classnamer.
 ====================================================
