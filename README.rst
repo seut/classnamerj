@@ -8,7 +8,7 @@
  Classnamerj - A Java implementation of classnamer.
 ====================================================
 
-This is a Java implementation of the classnamer, more famous as it's
+This is a Java implementation of the classnamer, more famous for it's
 web-service: http://classnamer.com.
 Original implementation (Ruby) can be found here https://github.com/ab9/classnamer.
 
