@@ -2,6 +2,8 @@
         :target: https://travis-ci.org/seut/classnamerj
         :alt: Build status
 
+.. highlight:: java
+
 ====================================================
  Classnamerj - A Java implementation of classnamer.
 ====================================================
@@ -30,6 +32,61 @@ long desired classname::
 
   ./bin/classnamerj
 
+
+Add library as a dependency
+===========================
+
+The library is available through `Bintray`_ (jCenter).
+
+Gradle
+------
+
+Add jCenter to repositories::
+
+   repositories {
+       jcenter()
+   }
+
+Add classnamerj as a compile dependency::
+
+  dependencies {
+      compile 'net.rtme:classnamerj:0.0.1'
+  }
+
+Maven
+-----
+
+Add jCenter to repositories::
+
+  <profiles>
+    <profile>
+      <repositories>
+        <repository>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>central</id>
+          <name>bintray</name>
+          <url>http://jcenter.bintray.com</url>
+        </repository>
+      </repositories>
+      <id>bintray</id>
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>bintray</activeProfile>
+  </activeProfiles>
+
+Add classnamerj as a dependency::
+
+  <dependencies>
+    <dependency>
+      <groupId>io.crate</groupId>
+      <artifactId>crate</artifactId>
+      <version>0.49.0</version>
+    </dependency>
+  </dependencies>
 
 Using the library
 =================
@@ -80,3 +137,4 @@ This code is distributed under the MIT License (also known as the
 Expat License). See the LICENSE.txt file for details.
 
 .. _Java: http://www.java.com/
+.. _Bintray: https://bintray.com/smu/maven/classnamerj
